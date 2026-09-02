@@ -1,0 +1,90 @@
+openapi: 3.0.3
+info:
+  title: SIGA Audit Notification API
+  version: 1.1.0
+  description: Functional append-only audit and in-app notifications.
+servers:
+  - url: /api/v1
+security:
+  - bearerAuth: []
+paths:
+  /audit-events:
+    get:
+      summary: Search audit events
+      parameters:
+        - { name: actorId, in: query, schema: { type: string, format: uuid } }
+        - { name: aggregateType, in: query, schema: { type: string } }
+        - { name: aggregateId, in: query, schema: { type: string, format: uuid } }
+        - { name: correlationId, in: query, schema: { type: string, format: uuid } }
+        - { name: from, in: query, schema: { type: string, format: date-time } }
+        - { name: to, in: query, schema: { type: string, format: date-time } }
+      responses:
+        '200':
+          description: Audit page
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuditPage' }
+  /notifications:
+    get:
+      summary: List current user notifications
+      parameters:
+        - { name: unreadOnly, in: query, schema: { type: boolean, default: false } }
+      responses:
+        '200':
+          description: Notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Notification' }
+  /notifications/{id}/read:
+    post:
+      summary: Mark notification as read
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Updated notification
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Notification' }
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
+  schemas:
+    AuditEvent:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        eventType: { type: string }
+        actorId: { type: string, format: uuid }
+        aggregateType: { type: string }
+        aggregateId: { type: string, format: uuid }
+        action: { type: string }
+        result: { type: string }
+        correlationId: { type: string, format: uuid }
+        details: { type: object, additionalProperties: true }
+        occurredAt: { type: string, format: date-time }
+    AuditPage:
+      type: object
+      properties:
+        content:
+          type: array
+          items: { $ref: '#/components/schemas/AuditEvent' }
+        page: { type: integer }
+        size: { type: integer }
+        totalElements: { type: integer, format: int64 }
+    Notification:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        type: { type: string }
+        title: { type: string }
+        message: { type: string }
+        referenceType: { type: string }
+        referenceId: { type: string, format: uuid }
+        readAt: { type: string, format: date-time }
+        createdAt: { type: string, format: date-time }
