@@ -1,0 +1,2 @@
+-- TODO: Pegar aquí los CREATE TABLE correspondientes al esquema 'audit'.
+-- REGLA: 0 FK hacia otros esquemas. Relaciones inter-dominio solo por ID.
