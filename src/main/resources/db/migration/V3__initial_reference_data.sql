@@ -1,1 +1,1 @@
--- TODO: Pegar aquí los INSERT iniciales del esquema 'audit'.
+-- No initial reference data required for audit schema

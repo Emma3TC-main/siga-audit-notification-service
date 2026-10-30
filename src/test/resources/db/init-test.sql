@@ -1,0 +1,1 @@
+CREATE SCHEMA IF NOT EXISTS audit AUTHORIZATION siga_audit_test;
