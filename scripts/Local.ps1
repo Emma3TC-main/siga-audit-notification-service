@@ -74,6 +74,7 @@ function Import-AuditEnvironment {
     $env:AUDIT_LOCATION_CONSUMER_ENABLED = 'true'
     $env:AUDIT_LOT_CONSUMER_ENABLED = 'true'
     $env:AUDIT_ASSET_CONSUMER_ENABLED = 'true'
+    $env:AUDIT_IDENTITY_CONSUMER_ENABLED = 'true'
     $env:NOTIFICATIONS_CONSUMER_ENABLED = 'true'
 }
 

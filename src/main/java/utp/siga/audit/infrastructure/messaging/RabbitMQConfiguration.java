@@ -11,6 +11,7 @@ import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFacto
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.amqp.SimpleRabbitListenerContainerFactoryConfigurer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,6 +19,41 @@ import org.springframework.retry.support.RetryTemplate;
 
 @Configuration
 public class RabbitMQConfiguration {
+
+    @Bean("identityAuditDeadLetterExchange")
+    @ConditionalOnProperty(name = "audit.identity-consumer.enabled", havingValue = "true")
+    public DirectExchange identityAuditDeadLetterExchange(
+            @Value("${audit.identity-consumer.dead-letter-exchange:siga.identity.audit.dlx}") String exchange) {
+        return new DirectExchange(exchange, true, false);
+    }
+
+    @Bean("identityAuditDeadLetterQueue")
+    @ConditionalOnProperty(name = "audit.identity-consumer.enabled", havingValue = "true")
+    public Queue identityAuditDeadLetterQueue(
+            @Value("${audit.identity-consumer.dead-letter-queue:siga.identity.audit.dlq}") String queue) {
+        return QueueBuilder.durable(queue).build();
+    }
+
+    @Bean
+    @ConditionalOnProperty(name = "audit.identity-consumer.enabled", havingValue = "true")
+    public Binding identityAuditDeadLetterBinding(
+            @Qualifier("identityAuditDeadLetterQueue") Queue queue,
+            @Qualifier("identityAuditDeadLetterExchange") DirectExchange exchange,
+            @Value("${audit.identity-consumer.dead-letter-routing-key:siga.identity.audit.dead}") String routingKey) {
+        return BindingBuilder.bind(queue).to(exchange).with(routingKey);
+    }
+
+    @Bean("identityAuditConsumerRetryTemplate")
+    public RetryTemplate identityAuditConsumerRetryTemplate(
+            @Value("${audit.identity-consumer.retry.max-attempts:3}") int maxAttempts,
+            @Value("${audit.identity-consumer.retry.initial-interval-ms:250}") long initialInterval,
+            @Value("${audit.identity-consumer.retry.multiplier:2.0}") double multiplier,
+            @Value("${audit.identity-consumer.retry.max-interval-ms:2000}") long maxInterval) {
+        return RetryTemplate.builder()
+                .maxAttempts(maxAttempts)
+                .exponentialBackoff(initialInterval, multiplier, maxInterval)
+                .build();
+    }
 
     @Bean
     public TopicExchange eventsExchange(@Value("${audit.consumer.exchange:siga.events}") String exchange) {

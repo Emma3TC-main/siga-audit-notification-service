@@ -35,6 +35,17 @@ management:
           include: readinessState,db
 
 audit:
+  identity-consumer:
+    enabled: ${AUDIT_IDENTITY_CONSUMER_ENABLED:false}
+    queue: ${AUDIT_IDENTITY_QUEUE:siga.identity.audit}
+    dead-letter-exchange: ${AUDIT_IDENTITY_DLX:siga.identity.audit.dlx}
+    dead-letter-queue: ${AUDIT_IDENTITY_DLQ:siga.identity.audit.dlq}
+    dead-letter-routing-key: ${AUDIT_IDENTITY_DEAD_ROUTING_KEY:siga.identity.audit.dead}
+    retry:
+      max-attempts: ${AUDIT_IDENTITY_RETRY_MAX_ATTEMPTS:3}
+      initial-interval-ms: ${AUDIT_IDENTITY_RETRY_INITIAL_MS:250}
+      multiplier: ${AUDIT_IDENTITY_RETRY_MULTIPLIER:2.0}
+      max-interval-ms: ${AUDIT_IDENTITY_RETRY_MAX_MS:2000}
   lot-consumer:
     enabled: ${AUDIT_LOT_CONSUMER_ENABLED:false}
     queue: ${AUDIT_LOT_QUEUE:audit.lot.changed.v1}

@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SIGA IAM UserUpdated v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["eventId", "eventType", "schemaVersion", "producer", "aggregateType", "aggregateId", "correlationId", "occurredAt", "payload"],
+  "properties": {
+    "eventId": { "type": "string", "format": "uuid" },
+    "eventType": { "const": "UserUpdated" },
+    "schemaVersion": { "const": 2 },
+    "producer": { "const": "identity-service" },
+    "aggregateType": { "const": "User" },
+    "aggregateId": { "type": "string", "format": "uuid" },
+    "correlationId": { "type": "string", "format": "uuid" },
+    "causationId": { "type": "string", "format": "uuid" },
+    "occurredAt": { "type": "string", "format": "date-time" },
+    "payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["userId", "actorUserId", "before", "after"],
+      "properties": {
+        "userId": { "type": "string", "format": "uuid" },
+        "actorUserId": { "type": "string", "format": "uuid" },
+        "before": { "$ref": "#/$defs/userSnapshot" },
+        "after": { "$ref": "#/$defs/userSnapshot" }
+      }
+    }
+  },
+  "$defs": {
+    "userSnapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "username", "email", "active", "mfaEnabled", "roleIds"],
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "username": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "email": { "type": "string", "format": "email", "maxLength": 254 },
+        "active": { "type": "boolean" },
+        "mfaEnabled": { "type": "boolean" },
+        "roleIds": { "type": "array", "items": { "type": "string", "format": "uuid" }, "uniqueItems": true }
+      }
+    }
+  }
+}

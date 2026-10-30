@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SIGA IAM RolePermissionsChanged v2",
+  "description": "before.permissionIds and after.permissionIds are complete replacement snapshots, not deltas.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["eventId", "eventType", "schemaVersion", "producer", "aggregateType", "aggregateId", "correlationId", "occurredAt", "payload"],
+  "properties": {
+    "eventId": { "type": "string", "format": "uuid" },
+    "eventType": { "const": "RolePermissionsChanged" },
+    "schemaVersion": { "const": 2 },
+    "producer": { "const": "identity-service" },
+    "aggregateType": { "const": "Role" },
+    "aggregateId": { "type": "string", "format": "uuid" },
+    "correlationId": { "type": "string", "format": "uuid" },
+    "causationId": { "type": "string", "format": "uuid" },
+    "occurredAt": { "type": "string", "format": "date-time" },
+    "payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["roleId", "actorUserId", "before", "after"],
+      "properties": {
+        "roleId": { "type": "string", "format": "uuid" },
+        "actorUserId": { "type": "string", "format": "uuid" },
+        "before": { "$ref": "#/$defs/roleSnapshot" },
+        "after": { "$ref": "#/$defs/roleSnapshot" }
+      }
+    }
+  },
+  "$defs": {
+    "roleSnapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "code", "name", "active", "permissionIds"],
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "code": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "name": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "active": { "type": "boolean" },
+        "permissionIds": { "type": "array", "items": { "type": "string", "format": "uuid" }, "uniqueItems": true }
+      }
+    }
+  }
+}
