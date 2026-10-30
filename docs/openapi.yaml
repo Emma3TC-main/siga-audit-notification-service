@@ -1,8 +1,8 @@
 openapi: 3.0.3
 info:
   title: SIGA Audit Notification API
-  version: 1.1.0
-  description: Functional append-only audit and in-app notifications.
+  version: 1.2.0
+  description: Functional append-only audit and personal in-app notifications. Notification ownership is derived from JWT sub.
 servers:
   - url: /api/v1
 security:
@@ -11,6 +11,7 @@ paths:
   /audit-events:
     get:
       summary: Search audit events
+      description: Results are ordered deterministically by `occurredAt DESC, id DESC`. Client-provided sorting is not supported.
       parameters:
         - { name: actorId, in: query, schema: { type: string, format: uuid } }
         - { name: aggregateType, in: query, schema: { type: string } }
@@ -18,28 +19,58 @@ paths:
         - { name: correlationId, in: query, schema: { type: string, format: uuid } }
         - { name: from, in: query, schema: { type: string, format: date-time } }
         - { name: to, in: query, schema: { type: string, format: date-time } }
+        - name: page
+          in: query
+          description: Zero-based page index.
+          schema: { type: integer, minimum: 0, default: 0 }
+        - name: size
+          in: query
+          description: Number of audit events per page.
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
       responses:
         '200':
           description: Audit page
           content:
             application/json:
               schema: { $ref: '#/components/schemas/AuditPage' }
+        '400':
+          description: Invalid pagination or filter parameter
   /notifications:
     get:
       summary: List current user notifications
+      description: Returns only notifications owned by the authenticated JWT subject, ordered by `createdAt DESC, id DESC`.
       parameters:
         - { name: unreadOnly, in: query, schema: { type: boolean, default: false } }
+        - name: page
+          in: query
+          description: Zero-based page index.
+          schema: { type: integer, minimum: 0, default: 0 }
+        - name: size
+          in: query
+          description: Number of notifications per page.
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
       responses:
         '200':
-          description: Notifications
+          description: Current user's notification page
           content:
             application/json:
-              schema:
-                type: array
-                items: { $ref: '#/components/schemas/Notification' }
+              schema: { $ref: '#/components/schemas/NotificationPage' }
+        '400': { description: Invalid pagination or filter parameter }
+        '401': { description: Missing or invalid authentication }
+  /notifications/unread-count:
+    get:
+      summary: Count current user unread notifications
+      responses:
+        '200':
+          description: Exact unread count for the authenticated user
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UnreadNotificationCount' }
+        '401': { description: Missing or invalid authentication }
   /notifications/{id}/read:
     post:
       summary: Mark notification as read
+      description: Idempotent command. The first call sets readAt; later calls preserve that timestamp. A missing or non-owned ID returns 404.
       parameters:
         - name: id
           in: path
@@ -47,10 +78,9 @@ paths:
           schema: { type: string, format: uuid }
       responses:
         '200':
-          description: Updated notification
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/Notification' }
+          description: Notification marked as read; response has no body
+        '401': { description: Missing or invalid authentication }
+        '404': { description: Notification not found or not owned by the authenticated user }
 components:
   securitySchemes:
     bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
@@ -70,21 +100,40 @@ components:
         occurredAt: { type: string, format: date-time }
     AuditPage:
       type: object
+      required: [content, page, size, totalElements]
       properties:
         content:
           type: array
           items: { $ref: '#/components/schemas/AuditEvent' }
-        page: { type: integer }
-        size: { type: integer }
-        totalElements: { type: integer, format: int64 }
+        page: { type: integer, minimum: 0 }
+        size: { type: integer, minimum: 1, maximum: 100 }
+        totalElements: { type: integer, format: int64, minimum: 0 }
     Notification:
       type: object
+      required: [id, recipientUserId, type, title, message, severity, referenceType, referenceId, createdAt]
       properties:
         id: { type: string, format: uuid }
-        type: { type: string }
+        recipientUserId: { type: string, format: uuid }
+        type: { type: string, enum: [MOVEMENT_CONFIRMED] }
         title: { type: string }
         message: { type: string }
-        referenceType: { type: string }
+        severity: { type: string, enum: [INFO], description: Derived from notification type in the MVP. }
+        referenceType: { type: string, enum: [Movement] }
         referenceId: { type: string, format: uuid }
-        readAt: { type: string, format: date-time }
+        readAt: { type: string, format: date-time, nullable: true }
         createdAt: { type: string, format: date-time }
+    NotificationPage:
+      type: object
+      required: [content, page, size, totalElements]
+      properties:
+        content:
+          type: array
+          items: { $ref: '#/components/schemas/Notification' }
+        page: { type: integer, minimum: 0 }
+        size: { type: integer, minimum: 1, maximum: 100 }
+        totalElements: { type: integer, format: int64, minimum: 0 }
+    UnreadNotificationCount:
+      type: object
+      required: [unreadCount]
+      properties:
+        unreadCount: { type: integer, format: int64, minimum: 0 }

@@ -1,0 +1,74 @@
+server:
+  address: 127.0.0.1
+  port: ${AUDIT_PORT:8085}
+
+spring:
+  application:
+    name: siga-audit-notification-service
+  datasource:
+    url: ${AUDIT_DB_URL}
+    username: ${AUDIT_DB_USER}
+    password: ${AUDIT_DB_PASSWORD}
+  flyway:
+    schemas: audit
+    default-schema: audit
+    create-schemas: false
+    clean-disabled: true
+  rabbitmq:
+    host: ${AUDIT_RABBIT_HOST:127.0.0.1}
+    port: ${AUDIT_RABBIT_PORT:5672}
+    username: ${AUDIT_RABBIT_USER}
+    password: ${AUDIT_RABBIT_PASSWORD}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+      probes:
+        enabled: true
+      group:
+        readiness:
+          include: readinessState,db
+
+audit:
+  lot-consumer:
+    enabled: ${AUDIT_LOT_CONSUMER_ENABLED:false}
+    queue: ${AUDIT_LOT_QUEUE:audit.lot.changed.v1}
+    routing-key: ${AUDIT_LOT_ROUTING_KEY:inventory.lot.changed.v1}
+  asset-consumer:
+    enabled: ${AUDIT_ASSET_CONSUMER_ENABLED:false}
+    queue: ${AUDIT_ASSET_QUEUE:audit.asset.changed.v1}
+    routing-key: ${AUDIT_ASSET_ROUTING_KEY:inventory.asset.changed.v1}
+  location-consumer:
+    enabled: ${AUDIT_LOCATION_CONSUMER_ENABLED:false}
+    queue: ${AUDIT_LOCATION_QUEUE:audit.location.changed.v1}
+    routing-key: ${AUDIT_LOCATION_ROUTING_KEY:inventory.location.changed.v1}
+  consumer:
+    enabled: ${AUDIT_CONSUMER_ENABLED:false}
+    exchange: ${AUDIT_EXCHANGE:siga.events}
+    queue: ${AUDIT_QUEUE:audit.movement.confirmed.v1}
+    routing-key: ${AUDIT_ROUTING_KEY:inventory.movement.confirmed.v1}
+    retry:
+      max-attempts: ${AUDIT_RETRY_MAX_ATTEMPTS:3}
+      initial-interval-ms: ${AUDIT_RETRY_INITIAL_MS:250}
+      multiplier: ${AUDIT_RETRY_MULTIPLIER:2.0}
+      max-interval-ms: ${AUDIT_RETRY_MAX_MS:2000}
+  security:
+    jwks-uri: ${AUDIT_JWKS_URI:http://127.0.0.1:8081/.well-known/jwks.json}
+    issuer: ${AUDIT_JWT_ISSUER:siga-identity}
+    audience: ${AUDIT_JWT_AUDIENCE:siga-api}
+
+notifications:
+  consumer:
+    enabled: ${NOTIFICATIONS_CONSUMER_ENABLED:false}
+    queue: ${NOTIFICATIONS_QUEUE:notifications.movement.confirmed.v1}
+    routing-key: ${NOTIFICATIONS_ROUTING_KEY:inventory.movement.confirmed.v1}
+    retry:
+      max-attempts: ${NOTIFICATIONS_RETRY_MAX_ATTEMPTS:3}
+      initial-interval-ms: ${NOTIFICATIONS_RETRY_INITIAL_MS:250}
+      multiplier: ${NOTIFICATIONS_RETRY_MULTIPLIER:2.0}
+      max-interval-ms: ${NOTIFICATIONS_RETRY_MAX_MS:2000}
